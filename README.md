@@ -20,7 +20,7 @@ It’s designed to help students learn programming concepts (like hoisting, clos
 ---
 
 ## 🖼️ Preview
-![Code Output Predictor](./preview.jpg)
+![Code Output Predictor](./preview.jpeg)
 
 
 ---
