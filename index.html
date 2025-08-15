@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Code Output Predictor — JS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#0f1220;
+      --panel:#171a2b;
+      --accent:#7c9cff;
+      --text:#e9ecff;
+      --muted:#aab0d6;
+      --ok:#2bd17e;
+      --bad:#ff6b6b;
+      --chip:#20243b;
+      --input:#0c0f1a;
+      --border:#28304d;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% -10%, #1b1f35, #0f1220);
+      color:var(--text);
+      min-height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .app{
+      width:min(980px, 100%);
+      background:linear-gradient(180deg,#191d33, #131626);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,0.03);
+      overflow:hidden;
+    }
+    header{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      padding:18px 20px;
+      border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg,#171a2b,#14182a);
+    }
+    .logo{
+      width:34px;height:34px;border-radius:8px;
+      background:
+        conic-gradient(from 220deg at 50% 50%, #4f84ff, #8a5cff, #4f84ff);
+      box-shadow: 0 2px 10px rgba(124,156,255,.35);
+    }
+    header h1{font-size:18px;margin:0}
+    header .meta{margin-left:auto;display:flex;gap:10px}
+    .chip{
+      background:var(--chip);
+      border:1px solid var(--border);
+      color:var(--muted);
+      padding:6px 10px;border-radius:999px;
+      font-size:12px;
+    }
+
+    .wrap{
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap:0;
+    }
+    @media (max-width: 920px){
+      .wrap{grid-template-columns: 1fr}
+      .right{border-left:none;border-top:1px solid var(--border)}
+    }
+
+    .left, .right{padding:20px 20px 22px}
+    .left{
+      display:grid; gap:16px;
+    }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:16px;
+    }
+    .title{
+      margin:0 0 10px 0;
+      font-size:16px;
+      color:var(--muted);
+    }
+    pre{
+      margin:0;
+      background: #0d1122;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      line-height:1.45;
+      font-size:14px;
+      color:#dfe4ff;
+    }
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+
+    textarea{
+      width:100%;
+      min-height:140px;
+      background:var(--input);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 12px;
+      font-size:14px;
+      line-height:1.4;
+      resize:vertical;
+      outline:none;
+    }
+    textarea::placeholder{color:#8a90b5}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      appearance:none; border:none; cursor:pointer;
+      background:var(--accent); color:#0a0d1a;
+      padding:10px 14px; font-weight:700; border-radius:10px;
+      transition: transform .06s ease, opacity .2s ease;
+    }
+    button.secondary{
+      background:#232845; color:var(--text);
+      border:1px solid var(--border);
+    }
+    button.ghost{
+      background:transparent; color:var(--muted);
+      border:1px dashed var(--border);
+    }
+    button:active{transform: translateY(1px)}
+    .result{
+      padding:10px 12px; border-radius:10px; font-weight:700; display:inline-flex; gap:8px; align-items:center;
+    }
+    .ok{background:rgba(43,209,126,.12); color:var(--ok); border:1px solid rgba(43,209,126,.35)}
+    .bad{background:rgba(255,107,107,.12); color:var(--bad); border:1px solid rgba(255,107,107,.35)}
+    .muted{color:var(--muted)}
+    .explain p{margin:.3rem 0}
+    .stats{display:flex; gap:10px; flex-wrap:wrap}
+    .stat{
+      background:var(--chip); border:1px solid var(--border);
+      border-radius:10px; padding:8px 10px; font-size:12px; color:var(--muted)
+    }
+    .kbd{
+      font:inherit; background:#0c0f1a; border:1px solid var(--border); padding:2px 6px; border-radius:6px; color:#c6ccff
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <h1>Code Output Predictor <span class="muted">· JavaScript</span></h1>
+      <div class="meta">
+        <div class="chip">Fun • DSA practice via code reading</div>
+        <div class="chip" id="high">High score: 0</div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <section class="left">
+        <div class="card">
+          <h3 class="title" id="qTitle">Question</h3>
+          <pre><code id="snippet">// Loading...</code></pre>
+          <div class="row" style="margin-top:10px">
+            <button class="secondary" id="copyBtn">Copy snippet</button>
+            <button class="ghost" id="showHintBtn">Hint</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="title">Your predicted console output</h3>
+          <textarea id="userOut" placeholder="Type output here. Put each console.log on a new line. For no output, leave empty."></textarea>
+          <div class="row" style="justify-content:space-between; align-items:center">
+            <div class="muted">
+              Tips: ignore extra spaces; write one line per <span class="kbd">console.log</span>.
+            </div>
+            <div class="row">
+              <button id="checkBtn">Check</button>
+              <button class="secondary" id="nextBtn">Next (Skip)</button>
+              <button class="ghost" id="revealBtn">Reveal answer</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card explain" id="explainCard" style="display:none">
+          <div id="resultBadge"></div>
+          <h3 class="title">Explanation</h3>
+          <p id="explainText"></p>
+          <details style="margin-top:8px">
+            <summary class="muted">Show expected output</summary>
+            <pre><code id="expectedBox"></code></pre>
+          </details>
+        </div>
+      </section>
+
+      <aside class="right">
+        <div class="card">
+          <h3 class="title">Session stats</h3>
+          <div class="stats">
+            <div class="stat">Score: <b id="score">0</b></div>
+            <div class="stat">Streak: <b id="streak">0</b></div>
+            <div class="stat">Attempts: <b id="attempts">0</b></div>
+          </div>
+          <hr style="border-color:var(--border); opacity:.4; margin:14px 0">
+          <h3 class="title">Formatting guide</h3>
+          <p class="muted">
+            • Use new lines for separate <span class="kbd">console.log</span> calls<br>
+            • Write <span class="kbd">undefined</span>, <span class="kbd">NaN</span>, <span class="kbd">null</span> literally if that’s the output<br>
+            • Strings don’t need quotes in your answer
+          </p>
+          <hr style="border-color:var(--border); opacity:.4; margin:14px 0">
+          <h3 class="title">Actions</h3>
+          <div class="row">
+            <button class="secondary" id="resetBtn">Reset stats</button>
+            <button class="ghost" id="shuffleBtn">Shuffle bank</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // --- Question bank ---
+    // Each answer is the exact console output with each log on a new line.
+    const BANK = [
+      {
+        id: 1,
+        title: "Hoisting with var",
+        code: `console.log(a);\nvar a = 10;\nconsole.log(a);`,
+        answer: `undefined\n10`,
+        hint: "Declarations are hoisted, initializations are not.",
+        explain: "With 'var', the declaration is hoisted as 'var a', initialized to undefined. First log: undefined. After assignment to 10, second log prints 10."
+      },
+      {
+        id: 2,
+        title: "var in a loop with setTimeout",
+        code: `for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0);\n}`,
+        answer: `3\n3\n3`,
+        hint: "One function scope for 'var i'. All callbacks run after loop.",
+        explain: "The loop finishes with i === 3, and all scheduled callbacks access the same 'i' binding, so they log 3 three times."
+      },
+      {
+        id: 3,
+        title: "let in a loop with setTimeout",
+        code: `for (let i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0);\n}`,
+        answer: `0\n1\n2`,
+        hint: "'let' creates a new binding per iteration.",
+        explain: "Each iteration gets its own 'i', so callbacks print 0, then 1, then 2."
+      },
+      {
+        id: 4,
+        title: "typeof null",
+        code: `console.log(typeof null);`,
+        answer: `object`,
+        hint: "Legacy quirk of JS.",
+        explain: "`typeof null` is the well-known historical bug that returns 'object'."
+      },
+      {
+        id: 5,
+        title: "Sparse arrays",
+        code: `const arr = [1,2,3];\narr[10] = 99;\nconsole.log(arr.length);\nconsole.log(arr[5]);`,
+        answer: `11\nundefined`,
+        hint: "Setting a far index creates empty slots.",
+        explain: "Length becomes highest index + 1 = 11. Empty slots read as undefined."
+      },
+      {
+        id: 6,
+        title: "Array + Array",
+        code: `console.log([1,2,3] + [4,5]);`,
+        answer: `1,2,34,5`,
+        hint: "Arrays coerce to strings with toString().",
+        explain: "Both arrays become '1,2,3' and '4,5'. '+' concatenates strings → '1,2,34,5'."
+      },
+      {
+        id: 7,
+        title: "String math vs concatenation",
+        code: `console.log('5' - '2');\nconsole.log('5' + '2');`,
+        answer: `3\n52`,
+        hint: "Minus triggers numeric coercion, plus triggers string concatenation.",
+        explain: "`'5' - '2'` → 3 (numbers). `'5' + '2'` → '52' (string)."
+      },
+      {
+        id: 8,
+        title: "Objects are references",
+        code: `const a = { n: 1 };\nconst b = a;\na.n = 2;\nconsole.log(b.n);`,
+        answer: `2`,
+        hint: "a and b point to the same object.",
+        explain: "Mutating a property via 'a' is visible via 'b', so logs 2."
+      },
+      {
+        id: 9,
+        title: "Microtask vs sync",
+        code: `Promise.resolve().then(() => console.log('micro'));\nconsole.log('sync');`,
+        answer: `sync\nmicro`,
+        hint: "Promises (then) run after the current stack.",
+        explain: "Synchronous log runs first; microtask runs right after → 'sync' then 'micro'."
+      },
+      {
+        id: 10,
+        title: "Automatic semicolon insertion",
+        code: `function bar(){\n  return\n  { a: 1 }\n}\nconsole.log(bar());`,
+        answer: `undefined`,
+        hint: "A newline after 'return' matters.",
+        explain: "ASI inserts a semicolon after 'return', so the function returns undefined; the object becomes a separate statement."
+      }
+
+    ];
+
+    // --- State ---
+    let order = [...BANK.keys()];
+    let currIndex = 0;
+    let score = 0;
+    let streak = 0;
+    let attempts = 0;
+    const el = s => document.querySelector(s);
+    const eHigh = el('#high'), eTitle = el('#qTitle'), eSnippet = el('#snippet');
+    const eUser = el('#userOut'), eExplain = el('#explainText'), eCard = el('#explainCard');
+    const eExpected = el('#expectedBox'), eResult = el('#resultBadge');
+    const eScore = el('#score'), eStreak = el('#streak'), eAttempts = el('#attempts');
+
+    // --- Utilities ---
+    const shuffle = arr => {
+      for (let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+
+    // Normalize outputs: trim lines, collapse inner spaces, remove blank trailing lines
+    function normalize(s){
+      if (!s) return '';
+      return s
+        .replace(/\r\n/g, '\n')
+        .split('\n')
+        .map(line => line.trim().replace(/\s+/g, ' '))
+        .filter((_, idx, arr) => !(idx === arr.length-1 && _ === ''))
+        .join('\n')
+        .trim();
+    }
+
+    function loadHigh(){
+      const h = +localStorage.getItem('cop_high') || 0;
+      eHigh.textContent = `High score: ${h}`;
+      return h;
+    }
+    function saveHigh(val){
+      const h = +localStorage.getItem('cop_high') || 0;
+      if (val > h){
+        localStorage.setItem('cop_high', String(val));
+        eHigh.textContent = `High score: ${val}`;
+      }
+    }
+
+    // --- Core ---
+    function loadQuestion(){
+      eCard.style.display = 'none';
+      const q = BANK[order[currIndex]];
+      eTitle.textContent = `Q${q.id}. ${q.title}`;
+      eSnippet.textContent = q.code;
+      eUser.value = '';
+      eUser.focus();
+    }
+
+    function nextQuestion(){
+      currIndex = (currIndex + 1) % order.length;
+      loadQuestion();
+    }
+
+    function reveal(showExplainOnly=false){
+      const q = BANK[order[currIndex]];
+      eExpected.textContent = q.answer || '(no output)';
+      eExplain.textContent = q.explain;
+      eResult.innerHTML = `<span class="result muted">Answer shown</span>`;
+      eCard.style.display = '';
+      if (!showExplainOnly) { attempts++; eAttempts.textContent = attempts; streak = 0; eStreak.textContent = streak; }
+    }
+
+    function check(){
+      attempts++;
+      eAttempts.textContent = attempts;
+
+      const q = BANK[order[currIndex]];
+      const expected = normalize(q.answer);
+      const user = normalize(eUser.value);
+
+      const correct = expected === user;
+      if (correct){
+        score += 10;
+        streak += 1;
+        saveHigh(score);
+        eResult.innerHTML = `<span class="result ok">✔ Correct</span>`;
+      }else{
+        score = Math.max(0, score - 2);
+        streak = 0;
+        eResult.innerHTML = `<span class="result bad">✖ Incorrect</span>`;
+      }
+      eScore.textContent = score;
+      eStreak.textContent = streak;
+
+      eExpected.textContent = q.answer || '(no output)';
+      eExplain.textContent = q.explain + (correct ? '' : `\n\nHint to compare: ${q.hint}`);
+      eCard.style.display = '';
+    }
+
+    function copySnippet(){
+      const q = BANK[order[currIndex]];
+      navigator.clipboard.writeText(q.code).then(()=>{
+        el('#copyBtn').textContent = 'Copied!';
+        setTimeout(()=> el('#copyBtn').textContent = 'Copy snippet', 900);
+      });
+    }
+
+    function showHint(){
+      const q = BANK[order[currIndex]];
+      eCard.style.display = '';
+      eResult.innerHTML = `<span class="result muted">💡 Hint</span>`;
+      eExplain.textContent = q.hint;
+      eExpected.textContent = '(hidden)';
+    }
+
+    function resetStats(){
+      score = 0; streak = 0; attempts = 0;
+      eScore.textContent = score; eStreak.textContent = streak; eAttempts.textContent = attempts;
+    }
+
+    // --- Events ---
+    el('#checkBtn').addEventListener('click', check);
+    el('#revealBtn').addEventListener('click', ()=>reveal(false));
+    el('#nextBtn').addEventListener('click', nextQuestion);
+    el('#copyBtn').addEventListener('click', copySnippet);
+    el('#showHintBtn').addEventListener('click', showHint);
+    el('#resetBtn').addEventListener('click', resetStats);
+    el('#shuffleBtn').addEventListener('click', ()=>{
+      shuffle(order);
+      currIndex = 0;
+      loadQuestion();
+    });
+    eUser.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
+        e.preventDefault();
+        check();
+      }
+    });
+
+    // --- Init ---
+    shuffle(order);
+    loadHigh();
+    loadQuestion();
+  </script>
+</body>
+</html>
