@@ -40,5 +40,3 @@ It’s designed to help students learn programming concepts (like hoisting, clos
 - Mobile-friendly UI
 
 ---
-
-## 📂 Project Structure
